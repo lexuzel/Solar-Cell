@@ -12,7 +12,12 @@
 // TODO: add headers that you want to pre-compile here
 
 #include <iostream>
-#include "BuilderManagement.h"
+#include "Builder.h"
+#include "PZoneBuilder.h"
+#include "NZoneBuilder.h"
+#include "GradedPZoneBuilder.h"
+#include "GradedNZoneBuilder.h"
+#include "SolarCell.h"
 #include "constants.h"
 #include <cassert>
 #include <fstream>

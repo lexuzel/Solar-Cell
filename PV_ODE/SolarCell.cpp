@@ -1,4 +1,4 @@
-#include "pch.h"
+#include "SolarCell.h"
 
 void SolarCell::setBuilder(const Builder &b) {
 	builder = b;
