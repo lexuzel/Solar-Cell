@@ -11,8 +11,8 @@ protected:
 	virtual double calc_dndx(double x) override final;
 	virtual double get_alfa(double lambda, double x) override final;
 
-	virtual double get_Band_gap(double x);
-	virtual double calc_Eq(double x);
+	virtual double get_Band_gap(double x) override;
+	virtual double calc_Eq(double x) override;
 public:
 	PZoneBuilder();
 	virtual void integrate_continuity_eq() override final;

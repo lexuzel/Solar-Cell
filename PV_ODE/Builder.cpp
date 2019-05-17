@@ -22,4 +22,3 @@ bool Builder::double_equal(double a, double b) {
 	if (diff < absEpsilon) return true;
 	return diff < (fabs(a) > fabs(b) ? fabs(a) : fabs(b)) * relEpsilon;
 }
-

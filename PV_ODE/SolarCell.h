@@ -3,9 +3,9 @@
 
 class SolarCell {
 private:
-	Builder builder;
+	Builder* builder;
 public:
-	void setBuilder(const Builder &b);
+	void setBuilder(Builder &b);
 	void execute();
 	void writeToFile(const char* address);
 };

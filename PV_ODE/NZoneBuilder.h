@@ -13,10 +13,10 @@ protected:
 	virtual double calc_dndx(double x) override final;
 	virtual double get_alfa(double lambda, double x) override final;
 
-	virtual double get_Band_gap(double x);
-	virtual double calc_Eq(double x);
+	virtual double get_Band_gap(double x) override;
+	virtual double calc_Eq(double x) override;
 public:
 	NZoneBuilder(double d_alfa);
-	virtual void integrate_continuity_eq();
+	virtual void integrate_continuity_eq() override;
 	virtual void write_to_file(const char* filename) override final;
 };

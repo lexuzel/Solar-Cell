@@ -7,7 +7,7 @@ protected:
 	std::vector<double> alfa_table;
 
 	double width, Ndop, D_diff, mu, tau, S;
-	double step_x, step_l;
+	double step_x;
 
 	/* Побудувати матрицю коефіцієнтів */
 	/* Необхідно для вирішення рівняння неперервності */
