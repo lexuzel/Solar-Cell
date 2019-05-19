@@ -13,7 +13,7 @@ const double k_b = 1.38064852E-23;		// Стала Больцмана
 const double T = 300.0;					// Температура в Кельвінах
 
 // Ширина бази - абсорбуючої області [m]
-const double width_n = 0.78E-6;			// d = 0.78 mkm (Optimization of graded band gap CdHgTe solar cells <A.Bouazzi>)
+const double width_n = 0.78E-5;			// d = 0.78 mkm (Optimization of graded band gap CdHgTe solar cells <A.Bouazzi>)
 const double width_p = 0.78E-6;
 
 // Концентрація домішок [1/m3]
@@ -21,8 +21,8 @@ const double NA = 2.0E18;				// Optimization of graded band gap CdHgTe solar cel
 const double ND = 2.0E18;
 
 // Константи дифузії електронів і дірок [m2/(V*s)]
-const double D_diff_n = 1.01E-3;		// Dn = 10.1 cm2/s (Optimization of graded band gap CdHgTe solar cells <A.Bouazzi>)
-const double D_diff_p = 1.01E-3;
+const double D_diff_n = 1.0E-3;		// Dn = 10.1 cm2/s (Optimization of graded band gap CdHgTe solar cells <A.Bouazzi>)
+const double D_diff_p = 1.0E-4;
 
 // Рухливості електронів і дірок [m/s * m/V]
 const double mu_n = 0.04;				// mu(n) = 400 cm2/(V*s) (Optimization of graded band gap CdHgTe solar cells <A.Bouazzi>)

@@ -145,7 +145,7 @@ double NZoneBuilder::get_alfa(double lambda, double x){
 }
 
 double NZoneBuilder::get_Band_gap(double x){
-	return Eg_d;
+	return Eg_d * q_e;
 }
 
 double NZoneBuilder::calc_Eq(double x){

@@ -103,7 +103,7 @@ double PZoneBuilder::get_alfa(double lambda, double x){
 }
 
 double PZoneBuilder::get_Band_gap(double x){
-	return Eg_d;
+	return Eg_d * q_e;
 }
 
 double PZoneBuilder::calc_Eq(double x){
@@ -160,7 +160,7 @@ GradedPZoneBuilder::GradedPZoneBuilder() : PZoneBuilder() {}
 
 double GradedPZoneBuilder::calc_Eq(double x) {
 	double result = 2 * x * convex + (Eg_d - Eg_0) * q_e / width - convex * width;
-	return -result / q_e;
+	return result / q_e;
 }
 
 double GradedPZoneBuilder::get_Band_gap(double x) {

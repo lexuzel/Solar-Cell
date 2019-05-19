@@ -158,6 +158,7 @@
     <ClInclude Include="NZoneBuilder.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="PZoneBuilder.h" />
+    <ClInclude Include="SimplePZone.h" />
     <ClInclude Include="SolarCell.h" />
   </ItemGroup>
   <ItemGroup>
@@ -171,6 +172,7 @@
     </ClCompile>
     <ClCompile Include="PV_ODE.cpp" />
     <ClCompile Include="PZoneBuilder.cpp" />
+    <ClCompile Include="SimplePZone.cpp" />
     <ClCompile Include="SolarCell.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

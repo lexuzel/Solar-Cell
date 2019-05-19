@@ -5,9 +5,14 @@
 
 int main(){
 	SolarCell solar_cell;
-	auto builder = GradedPZoneBuilder();
-	solar_cell.setBuilder(builder);
+	auto builder1 = SimplePZoneBuilder();
+	solar_cell.setBuilder(builder1);
 	solar_cell.execute();
-	solar_cell.writeToFile("test.txt");
+	solar_cell.writeToFile("pzone.txt");
+
+	auto builder2 = GradedSimplePZoneBuilder();
+	solar_cell.setBuilder(builder2);
+	solar_cell.execute();
+	solar_cell.writeToFile("pzone-simple.txt");
 }
 
