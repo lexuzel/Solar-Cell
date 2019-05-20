@@ -36,7 +36,6 @@ double PZoneBuilder::calc_Generation(double x) {
 
 	integral_alfa = integrate_abs_coef(0, x);
 
-	double G0 = 1.0E15;
 	return G0 * alfa * exp(-integral_alfa);			//!!!! рпеаю бярюбхрх G(0)
 }
 
@@ -56,30 +55,8 @@ double PZoneBuilder::integrate_abs_coef(double start, double end) {
 }
 
 double PZoneBuilder::calc_abs_coef(double x) {
-	int index;
-	index = static_cast<int>(round(2 * x / step_x));
-	assert(index >= 0 && index <= (2 * K_x) && "In calc_abs_coef");
-	if (alfa_table[index] != 0.0) return alfa_table[index];
-
-	double lambda{ step_l };
-	double lambda_max{ plank_h * speed_of_light / get_Band_gap(x) };
-
-	double norm = 0.0;
-	for (double l = lambda; l <= lambda_max; l += step_l) {
-		norm += get_solar_distribution(l);
-	}
-
-	double f1{ get_solar_distribution(lambda)*get_alfa(lambda, x) };
-	double f2, f3;
-	double integral{ 0.0 };
-	while (lambda < lambda_max - step_l) {
-		f2 = get_solar_distribution(lambda + step_l / 2)*get_alfa(lambda + step_l / 2, x);
-		f3 = get_solar_distribution(lambda + step_l)*get_alfa(lambda + step_l, x);
-		integral += (f1 + 4 * f2 + f3) / 6;
-		lambda += step_l;
-		f1 = f3;
-	}
-	return integral / norm;
+	double lambda = 5.5E-7;
+	return get_alfa(lambda, x);
 }
 
 void PZoneBuilder::fill_alfa_table(){
@@ -98,12 +75,13 @@ double PZoneBuilder::calc_dndx(double x){
 
 double PZoneBuilder::get_alfa(double lambda, double x){
 	double d_energy{ (plank_h * speed_of_light / lambda - get_Band_gap(x)) / q_e };
-	double alfa0{ 1.23E7 };
-	return alfa0 * sqrt(d_energy);
+
+	if (d_energy < (get_Band_gap(x) / q_e)) return alfa0 * exp(d_energy - (get_Band_gap(x) - q_e));
+	else return alfa0 * sqrt(d_energy);
 }
 
 double PZoneBuilder::get_Band_gap(double x){
-	return Eg_d * q_e;
+	return Eg_0 * q_e;
 }
 
 double PZoneBuilder::calc_Eq(double x){

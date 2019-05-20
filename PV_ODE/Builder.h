@@ -17,10 +17,6 @@ protected:
 	/* Потребує розв'язку calc_abs_coef(х); integrate_abs_coef(0, х) */
 	virtual double calc_Generation(double x) = 0;
 
-	/* ІНТЕГРУВАННЯ КОЕФІЦІЄНТУ ПОГЛИНАННЯ ПО Х */
-	/* Потребує розв'язку calc_abs_coef(x) */
-	virtual double integrate_abs_coef(double start, double end) = 0;
-
 	/* ОБЧИСЛЕННЯ КОЕФІЦІЄНТУ ПОГЛИНАННЯ В ТОЧЦІ */
 	/* Відбувається інтегрування по довжинам хвиль з кроком K_l
 	   Потребує розв'язку get_alfa(lambda) та
@@ -52,4 +48,8 @@ public:
 
 	/* ЗАПИСАТИ ДАНІ В ФАЙЛ */
 	virtual void write_to_file(const char* filename) = 0;
+
+	/* ІНТЕГРУВАННЯ КОЕФІЦІЄНТУ ПОГЛИНАННЯ ПО Х */
+/* Потребує розв'язку calc_abs_coef(x) */
+	virtual double integrate_abs_coef(double start, double end) = 0;
 };
