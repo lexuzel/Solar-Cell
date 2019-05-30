@@ -15,6 +15,10 @@ const double T = 300.0;					// Температура в Кельвінах
 // Ширина бази - абсорбуючої області [m]
 const double width_n = 1.0E-5;			// d = 0.78 mkm (Optimization of graded band gap CdHgTe solar cells <A.Bouazzi>)
 const double width_p = 1.0E-5;
+const double x_1 = 2.0E-6;
+const double x_0 = x_1 + 1.0E-6;
+const double x_2 = x_0 + 0.2E-6;
+const double x_d = x_2 + 3.0E-6;
 
 // Концентрація домішок [1/m3]
 const double NA = 2.0E18;				// Optimization of graded band gap CdHgTe solar cells <A.Bouazzi>
@@ -40,17 +44,14 @@ const double S_n = 1.0E3;					// S = 1.0E5-E6 (Optimization of graded band gap C
 const double S_p = 1.0E3;
 
 // Ширина забороненої зони (крайні точки)
-const double Eg_0 = 1.5 + 1.26;
-const double Eg_d = 1.5;
-const double Eg_d2 = 1.5;
-const double convex = 0.0;
+const double Eg_0 = 2.76;
+const double Eg_x1 = 2.00;
+const double Eg_x2 = 1.5;
+const double bias = 1.5;
 
 // Гранична умова на концентрацію при x = width (зона p-n переходу)
-const double m_e = 0.064 * Eg_d * m0;
+const double m_e = 0.064 * Eg_x2 * m0;
 const double m_h = 0.35 * m0;
-
-// Константа у коефіцієнті поглинання alfa0
-//const double alfa0 = 1.0E6;				// Theoretical analysis of solar cells based on graded band-gap structures <G.Sassi>
 
 /* КОНСТАНТИ ЧИСЛОВОГО МЕТОДУ */
 
@@ -59,8 +60,9 @@ const long K_l = 400;					// Сітка дискретизація для lambda (довжина хвилі світл
 
 /* ПОХІДНІ КОНСТАНТИ */
 
-const double step_x_n = width_n / K_x;		// Крок сітки для х
-const double step_x_p = width_p / K_x;
+const double step_x_n = x_1 / K_x;		// Крок сітки для х
+const double step_x_p = (x_d - x_2) / K_x;
+const double step_x_pn = (x_2 - x_1) / K_x;
 const double step_l = 0.98E-6 / K_l;		// Крок сітки для lambda
 
 /* ТАБЛИЦЯ СПЕКТРАЛЬНОГО РОЗПОДІЛУ РАДІАЦІЇ СОНЦЯ (АМ 1) */

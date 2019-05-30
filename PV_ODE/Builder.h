@@ -21,21 +21,24 @@ protected:
 	/* Â³äáóâàºòüñÿ ³íòåãğóâàííÿ ïî äîâæèíàì õâèëü ç êğîêîì K_l
 	   Ïîòğåáóº ğîçâ'ÿçêó get_alfa(lambda) òà
 	   get_solar_distribution(lambda) */
-	virtual double calc_abs_coef(double x) = 0;
+	virtual double calc_abs_coef(double x);
 
 	virtual void fill_alfa_table() = 0;
 
 	/* ÎÁ×ÈÑËÅÍÍß dndx Â ÒÎ×Ö² */
 	virtual double calc_dndx(double x) = 0;
 
-	virtual double get_alfa(double lambda, double x) = 0;
+	virtual double get_alfa(double lambda, double x);
 
-	virtual double get_Band_gap(double x) = 0;
+	virtual double get_Band_gap(double x);
 	/* ÎÁ×ÈÑËÅÍÍß ÍÀÏĞÓÆÅÍÎÑÒ² ÅÊÂ. ÏÎËß Â ÒÎ×Ö² */
-	virtual double calc_Eq(double x) = 0;
+	virtual double calc_Eq(double x);
 
 	double get_solar_distribution(double lambda);
 	bool double_equal(double a, double b);
+
+	double get_Boundary_x1();
+	double get_Boundary_x2();
 
 public:
 	/* Ğ²ÂÍßÍÍß ÍÅÏÅĞÅĞÂÍÎÑÒ². */
@@ -52,4 +55,7 @@ public:
 	/* ²ÍÒÅÃĞÓÂÀÍÍß ÊÎÅÔ²Ö²ªÍÒÓ ÏÎÃËÈÍÀÍÍß ÏÎ Õ */
 /* Ïîòğåáóº ğîçâ'ÿçêó calc_abs_coef(x) */
 	virtual double integrate_abs_coef(double start, double end) = 0;
+
+	virtual double calc_delta() = 0;
+	virtual double get_majority_carriers(double x) = 0;
 };

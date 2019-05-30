@@ -5,7 +5,10 @@ void SolarCell::setBuilder(Builder &b) {
 }
 void SolarCell::execute() {
 	builder->integrate_continuity_eq();
-	delta_alfa = builder->integrate_abs_coef(0, width_n);
+	if (delta_alfa == 0.0) {
+	delta_alfa = builder->calc_delta();
+	}
+
 }
 void SolarCell::writeToFile(const char* address) {
 	builder->write_to_file(address);

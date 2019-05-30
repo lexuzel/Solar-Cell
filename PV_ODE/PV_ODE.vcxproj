@@ -157,6 +157,7 @@
     <ClInclude Include="GradedPZoneBuilder.h" />
     <ClInclude Include="NZoneBuilder.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="PNJunctionBuilder.h" />
     <ClInclude Include="PZoneBuilder.h" />
     <ClInclude Include="SolarCell.h" />
   </ItemGroup>
@@ -169,6 +170,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="PNJunctionBuilder.cpp" />
     <ClCompile Include="PV_ODE.cpp" />
     <ClCompile Include="PZoneBuilder.cpp" />
     <ClCompile Include="SolarCell.cpp" />
