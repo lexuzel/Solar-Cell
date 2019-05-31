@@ -5,14 +5,6 @@ std::vector<double> PNJunctionBuilder::construct_coef_matrix()
 	return std::vector<double>();
 }
 
-double PNJunctionBuilder::calc_Generation(double x)
-{
-	return 0.0;
-}
-
-void PNJunctionBuilder::fill_alfa_table()
-{
-}
 
 double PNJunctionBuilder::calc_dndx(double x)
 {
@@ -59,12 +51,13 @@ double PNJunctionBuilder::calc_Eq(double x){
 	return (get_Band_gap(x + step_x) - get_Band_gap(x - step_x)) / (2 * step_x);
 }
 
-PNJunctionBuilder::PNJunctionBuilder(double d_alfa) : delta_alfa(d_alfa){
+PNJunctionBuilder::PNJunctionBuilder(std::vector<double> d_alfa) {
 	width = x_2 - x_1;
 	step_x = step_x_pn;
 
 	n_table.resize(K_x + 1);
-	alfa_table.resize(2 * K_x + 1);
+	alfa_table.resize(2001);
+	std::copy(d_alfa.begin(), d_alfa.end(), integral_alfa_table.begin());
 }
 
 void PNJunctionBuilder::integrate_continuity_eq()
@@ -85,16 +78,6 @@ void PNJunctionBuilder::write_to_file(const char * filename){
 		fout << x << "\t" << energy.first / q_e << "\t" << energy.second / q_e << "\n";
 	}
 	fout.close();
-}
-
-double PNJunctionBuilder::integrate_abs_coef(double start, double end)
-{
-	return 0.0;
-}
-
-double PNJunctionBuilder::calc_delta()
-{
-	return 0.0;
 }
 
 double PNJunctionBuilder::get_majority_carriers(double x)

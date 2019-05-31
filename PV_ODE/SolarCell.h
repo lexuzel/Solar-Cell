@@ -3,11 +3,11 @@
 
 class SolarCell {
 private:
-	double delta_alfa;
+	std::vector<double> delta_alfa;
 	Builder* builder;
 public:
 	void setBuilder(Builder &b);
 	void execute();
 	void writeToFile(const char* address);
-	double getDalfa();
+	std::vector<double> getDalfa();
 };

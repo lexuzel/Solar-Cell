@@ -23,5 +23,7 @@
 #include <cassert>
 #include <fstream>
 #include <vector>
+#include <string>
+#include <algorithm>
 
 #endif //PCH_H

@@ -2,7 +2,8 @@
 
 PZoneBuilder::PZoneBuilder() {
 	n_table.resize(K_x + 1);
-	alfa_table.resize(2 * K_x + 1);
+	alfa_table.resize(2001);
+	integral_alfa_table.resize(2001);
 
 	width = x_1;
 	Ndop = NA;
@@ -24,55 +25,48 @@ std::vector<double> PZoneBuilder::construct_coef_matrix(){
 	return coef_matrix;
 }
 
-double PZoneBuilder::calc_Generation(double x) {
-	int index;
-	index = static_cast<int>(round(2 * x / step_x));
-	assert(index >= 0 && index <= (2 * K_x) && "In calc_Generation");
+//double PZoneBuilder::calc_Generation(double x) {
+//	int index = static_cast<int>(round(2 * (x) / step_x));
+//	assert(index >= 0 && index <= (2 * K_x) && "In calc_Generation");
+//
+//	double alfa, integral_alfa;
+//
+//	if (alfa_table[index] != 0.0) alfa = alfa_table[index];
+//	else alfa = calc_abs_coef(x);
+//
+//	integral_alfa = integrate_abs_coef(0, x);
+//
+//	return G0 * alfa * exp(-integral_alfa);
+//}
 
-	double alfa, integral_alfa;
-
-	if (alfa_table[index] != 0.0) alfa = alfa_table[index];
-	else alfa = calc_abs_coef(x);
-
-	integral_alfa = integrate_abs_coef(0, x);
-
-	return G0 * alfa * exp(-integral_alfa);
-}
-
-double PZoneBuilder::integrate_abs_coef(double start, double end) {
-	double x{ start };
-	double f1{ calc_abs_coef(x) };
-	double f2, f3;
-	double integral{ 0 };
-	while (x < end - step_x || double_equal(x, end - step_x)) {
-		f2 = calc_abs_coef(x + step_x / 2);
-		f3 = calc_abs_coef(x + step_x);
-		integral += step_x * (f1 + 4 * f2 + f3) / 6;
-		x += step_x;
-		f1 = f3;
-	}
-	return integral;
-}
-
-double PZoneBuilder::calc_delta(){
-	return integrate_abs_coef(0, width);
-}
+//double PZoneBuilder::integrate_abs_coef(double start, double end) {
+//	double x{ start };
+//	double f1{ calc_abs_coef(x) };
+//	double f2, f3;
+//	double integral{ 0 };
+//	while (x < end - step_x || double_equal(x, end - step_x)) {
+//		f2 = calc_abs_coef(x + step_x / 2);
+//		f3 = calc_abs_coef(x + step_x);
+//		integral += step_x * (f1 + 4 * f2 + f3) / 6;
+//		x += step_x;
+//		f1 = f3;
+//	}
+//	return integral;
+//}
 
 double PZoneBuilder::get_majority_carriers(double x){
-	long double ni = 2 * pow(2 * pi * sqrt(m_e * m_h) * k_b * T, 1.5) / pow(plank_h, 3) * exp(-get_Band_gap(x) / (2 * k_b * T));
-
 	int index_n = static_cast<int>(round(x / step_x));
-	long double result = Ndop * Ndop / (n_table[index_n] + ni);
+	long double result = Ndop + n_table[index_n];
 	return static_cast<double>(result);
 }
 
-void PZoneBuilder::fill_alfa_table(){
-	int index{ 0 };
-		for (double x = 0.0; x < width || double_equal(x, width); x += step_x / 2) {
-			alfa_table[index] = calc_abs_coef(x);
-			index++;
-		}
-}
+//void PZoneBuilder::fill_alfa_table(){
+//	int index{ 0 };
+//		for (double x = 0.0; x < width || double_equal(x, width); x += step_x / 2) {
+//			alfa_table[index] = calc_abs_coef(x);
+//			index++;
+//		}
+//}
 
 double PZoneBuilder::calc_dndx(double x){
 	int index = static_cast<int>(round(x / step_x));
@@ -82,7 +76,6 @@ double PZoneBuilder::calc_dndx(double x){
 
 void PZoneBuilder::integrate_continuity_eq(){
 
-	fill_alfa_table();
 	std::vector<double> coef_matrix = construct_coef_matrix();
 
 	double alfa3{ 0 }, beta{ 0 };
@@ -101,13 +94,24 @@ void PZoneBuilder::integrate_continuity_eq(){
 		n_table[i + 1] = (coef_matrix[i * 4 + 3] - coef_matrix[i * 4] * n_table[i + 2]) / coef_matrix[i * 4 + 1];
 	}
 	n_table[0] = n_table[2] - n_table[1] * 2 * step_x * beta;
+
+	for (auto &a : alfa_table) a = 0;
+	for (auto &a : integral_alfa_table) a = 0;
+	double integral{ 0 };
+	for (double x = 0.0; x < width - step_x || double_equal(x, width - step_x); x+=step_x) {
+		integral += (calc_Generation(x) + calc_Generation(x + step_x)) / 2 * step_x;
+	}
+	std::cout << "Photo-Current = " << integral*q_e << "\n";
 }
 
 void PZoneBuilder::write_to_file(const char * filename){
 	std::ofstream fout;
 	fout.open(filename);
 	fout.width(10);
-	fout << "  x  \t  n(x)  \t  dndx(x)  \t (maj)p(x) \t  Alfa  \t  Conduction level  \t  Valence level  \t EQ Field\n\n";
+	for (auto &a : alfa_table) a = 0;
+	for (auto &a : integral_alfa_table) a = 0;
+
+	fout << "  x  \t  n(x)  \t  dndx(x)  \t (maj)p(x) \t  Alfa  \t  Conduction level  \t  Valence level  \t EQ Field   \t Generation\n\n";
 		for (double x = 0.0; x < width || double_equal(x, width); x += step_x) {
 			fout.scientific;
 			fout.precision(4);
@@ -118,8 +122,8 @@ void PZoneBuilder::write_to_file(const char * filename){
 			if (index_n > 0 && index_n < K_x) fout << calc_dndx(x) << "\t";
 			else fout << 0.0 << "\t";
 
-			fout << get_majority_carriers(x) << "\t" << calc_abs_coef(x) << "\t";
-			fout << get_Band_gap(x) / q_e << "\t" << 0.0 << "\t" << calc_Eq(x) << "\n";
+			fout << get_majority_carriers(x) << "\t" << get_alfa(x, 5.5e-7) << "\t";
+			fout << get_Band_gap(x) / q_e << "\t" << 0.0 << "\t" << calc_Eq(x) << "\t" <<calc_Generation(x) << "\n";
 		}
 	fout.close();
 }

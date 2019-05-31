@@ -1,6 +1,6 @@
 #include "pch.h"
 
-NZoneBuilder::NZoneBuilder(double d_alfa) : delta_alfa(d_alfa) {
+NZoneBuilder::NZoneBuilder(std::vector<double> &d_alfa) {
 	width = x_d - x_2;
 	Ndop = ND;
 	D_diff = D_diff_p;
@@ -10,11 +10,12 @@ NZoneBuilder::NZoneBuilder(double d_alfa) : delta_alfa(d_alfa) {
 	step_x = step_x_p;
 
 	n_table.resize(K_x + 1); 
-	alfa_table.resize(2 * K_x + 1);
+	alfa_table.resize(2001);
+	std::copy(d_alfa.begin(), d_alfa.end(), integral_alfa_table.begin());
 }
 
 void NZoneBuilder::integrate_continuity_eq(){
-	fill_alfa_table();
+
 	std::vector<double> coef_matrix = construct_coef_matrix();
 
 		double alfa3{ 0 }, beta{ 0 };
@@ -51,7 +52,7 @@ void NZoneBuilder::write_to_file(const char * filename){
 			if (index_n > 0 && index_n < K_x) fout << calc_dndx(x) << "\t";
 			else fout << 0.0 << "\t";
 
-			fout << get_majority_carriers(x) << "\t" << calc_abs_coef(x) << "\t";
+			fout << get_majority_carriers(x) << "\t" << get_alfa(x, 5.5e-7) << "\t";
 			fout << get_Band_gap(x) / q_e - bias << "\t" << -bias << "\t" << calc_Eq(x) << "\n";
 		}
 	fout.close();
@@ -68,53 +69,12 @@ std::vector<double> NZoneBuilder::construct_coef_matrix(){
 	return coef_matrix;
 }
 
-double NZoneBuilder::calc_Generation(double x){
-	int index = static_cast<int>(round(2 * (x - x_2) / step_x));
-	assert(index >= 0 && index <= (2 * K_x) && "In calc_Generation");
-
-	double alfa, integral_alfa;
-
-	if (alfa_table[index] != 0.0) alfa = alfa_table[index];
-	else alfa = calc_abs_coef(x);
-
-	integral_alfa = integrate_abs_coef(x_2, x) + delta_alfa;
-
-	return G0 * alfa * exp(-integral_alfa);
-}
-
-double NZoneBuilder::integrate_abs_coef(double start, double end){
-	double x{ start };
-	double f1{ calc_abs_coef(x) };
-	double f2, f3;
-	double integral{ 0 };
-	while (x < end - step_x || double_equal(x, end - step_x)) {
-		f2 = calc_abs_coef(x + step_x / 2);
-		f3 = calc_abs_coef(x + step_x);
-		integral += step_x * (f1 + 4 * f2 + f3) / 6;
-		x += step_x;
-		f1 = f3;
-	}
-	return integral;
-}
-
-double NZoneBuilder::calc_delta(){
-	return integrate_abs_coef(x_2, x_d) + delta_alfa;;
-}
-
 double NZoneBuilder::get_majority_carriers(double x){
 	long double ni = 2 * pow(2 * pi * sqrt(m_e * m_h) * k_b * T, 1.5) / pow(plank_h, 3) * exp(-get_Band_gap(x) / (2 * k_b * T));
 
 	int index_n = static_cast<int>((x - x_2) / step_x);
 	long double result = Ndop * Ndop*exp(2 * -bias * q_e / k_b / T) / (n_table[index_n] + ni);
 	return static_cast<double>(result);
-}
-
-void NZoneBuilder::fill_alfa_table(){
-	int index{ 0 };
-		for (double x = x_2; x < x_2 + width || double_equal(x, x_2 + width); x += step_x / 2) {
-			alfa_table[index] = calc_abs_coef(x);
-			index++;
-		}
 }
 
 double NZoneBuilder::calc_dndx(double x){
