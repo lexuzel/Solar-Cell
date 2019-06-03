@@ -4,8 +4,9 @@ void SolarCell::setBuilder(Builder &b) {
 	builder = &b;
 }
 void SolarCell::execute() {
-	builder->integrate_continuity_eq();
+	builder->calc_photo_carriers();
 	delta_alfa = builder->calc_delta();
+	ph_current += builder->photo_current;
 }
 void SolarCell::writeToFile(const char* address) {
 	builder->write_to_file(address);

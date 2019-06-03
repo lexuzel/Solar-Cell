@@ -1,15 +1,5 @@
 #include "pch.h"
 
-std::vector<double> PNJunctionBuilder::construct_coef_matrix()
-{
-	return std::vector<double>();
-}
-
-
-double PNJunctionBuilder::calc_dndx(double x)
-{
-	return 0.0;
-}
 
 std::pair<double, double> PNJunctionBuilder::get_Energy_level(double x){
 
@@ -37,50 +27,81 @@ std::pair<double, double> PNJunctionBuilder::get_Energy_level(double x){
 	return std::make_pair(energy_of_conduction_zone, energy_of_valence_zone);
 }
 
+void PNJunctionBuilder::set_ntype_constants(){
+	Ndop = NA;
+	D_diff = D_diff_n;
+	mu = mu_n;
+	tau = tau_n;
+}
+
+void PNJunctionBuilder::set_ptype_constants(){
+	Ndop = ND;
+	D_diff = D_diff_p;
+	mu = mu_p;
+	tau = tau_p;
+}
+
 double PNJunctionBuilder::get_Band_gap(double x){
 	auto energy = get_Energy_level(x);
 	return energy.first - energy.second;
 }
 
 double PNJunctionBuilder::calc_Eq(double x){
-	if (double_equal(x, x_1)) 
-		return (get_Band_gap(x + step_x) - Eg_x1) / (2 * step_x);
-	if (double_equal(x, x_2)) 
-		return (Eg_x2 - get_Band_gap(x - step_x)) / (2 * step_x);
+	if (D_diff == D_diff_n) {
+		if (double_equal(x, x_1))
+			return (get_Energy_level(x + step_x).first / q_e - Eg_x1) / (2 * step_x);
+		if (double_equal(x, x_2))
+			return (-bias - get_Energy_level(x - step_x).first / q_e) / (2 * step_x);
 
-	return (get_Band_gap(x + step_x) - get_Band_gap(x - step_x)) / (2 * step_x);
+		return (get_Energy_level(x + step_x).first / q_e - get_Energy_level(x - step_x).first / q_e) / (2 * step_x);
+	}
+	else {
+		if (double_equal(x, x_1))
+			return -(get_Energy_level(x + step_x).second / q_e - Eg_x1) / (2 * step_x);
+		if (double_equal(x, x_2))
+			return -(-bias - get_Energy_level(x - step_x).second / q_e) / (2 * step_x);
+
+		return -(get_Energy_level(x + step_x).second / q_e - get_Energy_level(x - step_x).second / q_e) / (2 * step_x);
+	}
 }
 
-PNJunctionBuilder::PNJunctionBuilder(std::vector<double> d_alfa) {
+PNJunctionBuilder::PNJunctionBuilder(std::vector<double> d_alfa) : delta_alfa(d_alfa){
+	x0 = x_1;
 	width = x_2 - x_1;
 	step_x = step_x_pn;
 
 	n_table.resize(K_x + 1);
+	electrons.resize(K_x + 1);
+	generation_table.resize(K_x + 1);
 	alfa_table.resize(2001);
+	integral_alfa_table.resize(2001);
 	std::copy(d_alfa.begin(), d_alfa.end(), integral_alfa_table.begin());
-}
-
-void PNJunctionBuilder::integrate_continuity_eq()
-{
 }
 
 void PNJunctionBuilder::write_to_file(const char * filename){
 	std::ofstream fout;
 	fout.open(filename);
 	fout.width(10);
-	fout << "  x  \t  Conduction level  \t  Valence level\n\n";
-	for (double x = x_1; x <= x_2; x += step_x_pn) {
+
+	fout << "x \t n(x) \t p(x) \t Conduction level \t Valence level \t Fermi level \t Generation \n\n";
+	for (double x = x_1; x < x_2 || double_equal(x, x_2); x += step_x) {
 		fout.scientific;
 		fout.precision(4);
 		fout.width(10);
-
+		int index = static_cast<int>(round((x-x_1) / step_x));
 		auto energy = get_Energy_level(x);
-		fout << x << "\t" << energy.first / q_e << "\t" << energy.second / q_e << "\n";
+		fout << x << "\t" << electrons[index] << "\t" << n_table[index] << "\t" 
+			<< energy.first / q_e << "\t" << energy.second / q_e << "\t" << fermi_level << "\t" << generation_table[index] << "\n";
 	}
 	fout.close();
 }
 
-double PNJunctionBuilder::get_majority_carriers(double x)
-{
-	return 0.0;
+void PNJunctionBuilder::calc_photo_carriers(){
+	set_ntype_constants();
+	integrate_continuity_eq(0.0, ND);
+	std::copy(n_table.begin(), n_table.end(), electrons.begin());
+
+	set_ptype_constants();
+	integrate_continuity_eq(NA, 0.0);
+	calc_photoCurrent();
 }

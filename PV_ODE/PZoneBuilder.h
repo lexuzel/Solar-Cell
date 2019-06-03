@@ -3,11 +3,10 @@
 
 class PZoneBuilder : public Builder {
 protected:
-	virtual std::vector<double> construct_coef_matrix() override final;
-	virtual double calc_dndx(double x) override final;
+	virtual void integrate_continuity_eq(double b1, double b2) override final;
+	double get_majority_carriers(double x);
 public:
 	PZoneBuilder();
-	virtual void integrate_continuity_eq() override final;
 	virtual void write_to_file(const char* filename) override final;
-	virtual double get_majority_carriers(double x) override final;
+	virtual void calc_photo_carriers() override final;
 };

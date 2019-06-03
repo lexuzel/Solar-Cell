@@ -1,10 +1,5 @@
 #include "pch.h"
 
-//double Builder::calc_abs_coef(double x){
-//	double lambda = 5.5E-7;
-//	return get_alfa(x, lambda);
-//}
-
 double Builder::calc_Generation(double x){
 	std::ifstream fin("SolarSpectrum-AM15-NREL.txt");
 	auto get_solar_distribution = [&fin]() {
@@ -49,6 +44,33 @@ double Builder::calc_Generation(double x){
 	return integral;
 }
 
+double Builder::calc_dndx(double x){
+	int index = static_cast<int>(round((x-x0) / step_x));
+	assert(index >= 1 && index <= K_x - 1 && "In calc_dndx");
+	return (n_table[index + 1] - n_table[index - 1]) / (2 * step_x);
+}
+
+std::vector<double> Builder::construct_coef_matrix(){
+
+	if (generation_table[0] == 0) {
+	for (double x = x0; x < x0 + width || double_equal(x, x0 + width); x += step_x) {
+		int index = static_cast<int>(round((x - x0) / step_x));
+		assert(index >= 1 && index <= K_x - 1 && "In construct_coef_matrix");
+		generation_table[index] = calc_Generation(x);
+	}
+	}
+
+
+	std::vector<double> coef_matrix((K_x - 1) * 4);
+	for (long i = 0; i < K_x - 1; i++) {
+		coef_matrix[i * 4 + 0] = 2 * D_diff + mu * step_x * calc_Eq((i + 1) * step_x + x0);
+		coef_matrix[i * 4 + 1] = -4 * D_diff - 2 * step_x * step_x / tau;
+		coef_matrix[i * 4 + 2] = 2 * D_diff - mu * step_x * calc_Eq((i + 1) * step_x + x0);
+		coef_matrix[i * 4 + 3] = -generation_table[i + 1] * 2 * step_x*step_x;
+	}
+	return coef_matrix;
+}
+
 double Builder::get_alfa(double x, double lambda){
 	double d_energy{ (plank_h * speed_of_light / lambda - get_Band_gap(x)) / q_e };
 
@@ -67,21 +89,6 @@ double Builder::calc_Eq(double x){
 	return 0.0;
 }
 
-//double Builder::get_solar_distribution(double lambda) {
-//	int base_index{ 0 };
-//	for (int i = 0; i < irra_table_size; i++) {
-//		if (X[i] > lambda * 1.0E6) {
-//			base_index = i - 1;
-//			break;
-//		}
-//		if (double_equal(X[i], lambda * 1.0E6)) {
-//			return Y[i];
-//		}
-//	}
-//	double k{ (Y[base_index + 1] - Y[base_index]) / (X[base_index + 1] - X[base_index]) };
-//	return Y[base_index] + k * (lambda * 1.0E6 - X[base_index]);
-//}
-
 bool Builder::double_equal(double a, double b) {
 	double absEpsilon{ 1.0E-10 };
 	double relEpsilon{ 1.0E-5 };
@@ -90,18 +97,31 @@ bool Builder::double_equal(double a, double b) {
 	return diff < (fabs(a) > fabs(b) ? fabs(a) : fabs(b)) * relEpsilon;
 }
 
-double Builder::get_Boundary_x1(){
-	double correction = 0.5;
-	long double ni = 2 * pow(2 * pi * sqrt(m_e * m_h) * k_b * T, 1.5) / pow(plank_h, 3) * exp(-get_Band_gap(x_1) * correction / (2 * k_b * T));
-//	return static_cast<double>(ni*ni / NA);
-	return 0.0;
-}
+void Builder::integrate_continuity_eq(double b1, double b2){
 
-double Builder::get_Boundary_x2(){
-	return 0.0;
+	std::vector<double> coef_matrix = construct_coef_matrix();
+	coef_matrix[3] -= b1 * coef_matrix[2];
+
+	for (long i = 0; i < K_x - 2; i++) {
+		coef_matrix[(i + 1) * 4 + 1] -= coef_matrix[(i + 1) * 4 + 2] * coef_matrix[i * 4] / coef_matrix[i * 4 + 1];
+		coef_matrix[(i + 1) * 4 + 3] -= coef_matrix[(i + 1) * 4 + 2] * coef_matrix[i * 4 + 3] / coef_matrix[i * 4 + 1];
+	}
+	n_table[K_x] = b2;
+	for (long i = K_x - 2; i >= 0; i--) {
+		n_table[i + 1] = (coef_matrix[i * 4 + 3] - coef_matrix[i * 4] * n_table[i + 2]) / coef_matrix[i * 4 + 1];
+	}
+	n_table[0] = b1;
 }
 
 std::vector<double> Builder::calc_delta(){
 	return integral_alfa_table;
+}
+
+void Builder::calc_photoCurrent(){
+	double integral{ 0 };
+	for (int i = 0; i < generation_table.size() - 1; i++) {
+		integral += (generation_table[i] + generation_table[i + 1]) / 2 * step_x;
+	}
+	photo_current = q_e * integral;
 }
 

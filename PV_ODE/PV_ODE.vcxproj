@@ -153,7 +153,6 @@
   <ItemGroup>
     <ClInclude Include="Builder.h" />
     <ClInclude Include="constants.h" />
-    <ClInclude Include="GradedNZoneBuilder.h" />
     <ClInclude Include="GradedPZoneBuilder.h" />
     <ClInclude Include="NZoneBuilder.h" />
     <ClInclude Include="pch.h" />

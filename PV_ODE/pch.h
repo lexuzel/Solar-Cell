@@ -16,7 +16,6 @@
 #include "PZoneBuilder.h"
 #include "NZoneBuilder.h"
 #include "GradedPZoneBuilder.h"
-#include "GradedNZoneBuilder.h"
 #include "PNJunctionBuilder.h"
 #include "SolarCell.h"
 #include "constants.h"
