@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "EntireZoneBuilder.h"
 
 EntireZoneBuilder::EntireZoneBuilder(){
 	x0 = 0.0;
@@ -51,33 +50,6 @@ std::pair<double, double> EntireZoneBuilder::get_Energy_level(double x){
 	return std::make_pair(energy_of_conduction_zone, energy_of_valence_zone);
 }
 
-void EntireZoneBuilder::integrate_continuity_eq(double b1, double b2){
-
-	std::vector<double> coef_matrix = construct_coef_matrix();
-	coef_matrix[3] -= b1 * coef_matrix[2];
-
-	double alfa3{ 0 }, beta{ 0 };
-	alfa3 = 2 * D_diff - mu * step_x * calc_Eq(step_x);
-	beta = S / D_diff - mu / D_diff * calc_Eq(step_x);
-	coef_matrix[0] += alfa3;
-	coef_matrix[1] -= 2 * step_x * alfa3 * beta;
-
-	for (long i = 0; i < K_x - 2; i++) {
-		coef_matrix[(i + 1) * 4 + 1] -= coef_matrix[(i + 1) * 4 + 2] * coef_matrix[i * 4] / coef_matrix[i * 4 + 1];
-		coef_matrix[(i + 1) * 4 + 3] -= coef_matrix[(i + 1) * 4 + 2] * coef_matrix[i * 4 + 3] / coef_matrix[i * 4 + 1];
-	}
-	n_table[K_x] = b2;
-	for (long i = K_x - 2; i >= 0; i--) {
-		n_table[i + 1] = (coef_matrix[i * 4 + 3] - coef_matrix[i * 4] * n_table[i + 2]) / coef_matrix[i * 4 + 1];
-	}
-	n_table[0] = n_table[2] - n_table[1] * 2 * step_x * beta;
-}
-
-double EntireZoneBuilder::get_Band_gap(double x){
-	auto energy = get_Energy_level(x);
-	return energy.first - energy.second;
-}
-
 double EntireZoneBuilder::calc_Eq(double x){
 	if (D_diff == D_diff_n) {
 		if (x < x_1) return (Eg_x1 - Eg_0) / x_1;
@@ -101,45 +73,16 @@ double EntireZoneBuilder::calc_Eq(double x){
 	}
 }
 
-double EntireZoneBuilder::calc_dEdx(double x){
-	return (calc_Eq(x + step_x) - calc_Eq(x - step_x)) / (2 * step_x);
-}
-
 void EntireZoneBuilder::set_ntype_constants(){
-	Ndop = NA;
 	D_diff = D_diff_n;
 	mu = mu_n;
 	tau = tau_n;
 }
 
 void EntireZoneBuilder::set_ptype_constants(){
-	Ndop = ND;
 	D_diff = D_diff_p;
 	mu = -mu_p;
 	tau = tau_p;
-}
-
-void EntireZoneBuilder::calc_equilibrium(double b1, double b2){
-
-	std::vector<double> coef_matrix((K_x - 1) * 4);
-	for (long i = 0; i < K_x - 1; i++) {
-		coef_matrix[i * 4 + 0] = 2 * D_diff + mu * step_x * calc_Eq((i + 1) * step_x + x0);
-		coef_matrix[i * 4 + 1] = -4 * D_diff + 2 * step_x * step_x * mu * calc_dEdx((i + 1) * step_x + x0);
-		coef_matrix[i * 4 + 2] = 2 * D_diff - mu * step_x * calc_Eq((i + 1) * step_x + x0);
-		coef_matrix[i * 4 + 3] = 0;
-	}
-
-	coef_matrix[3] -= b1 * coef_matrix[2];
-
-	for (long i = 0; i < K_x - 2; i++) {
-		coef_matrix[(i + 1) * 4 + 1] -= coef_matrix[(i + 1) * 4 + 2] * coef_matrix[i * 4] / coef_matrix[i * 4 + 1];
-		coef_matrix[(i + 1) * 4 + 3] -= coef_matrix[(i + 1) * 4 + 2] * coef_matrix[i * 4 + 3] / coef_matrix[i * 4 + 1];
-	}
-	eq_table[K_x] = b2;
-	for (long i = K_x - 2; i >= 0; i--) {
-		eq_table[i + 1] = (coef_matrix[i * 4 + 3] - coef_matrix[i * 4] * eq_table[i + 2]) / coef_matrix[i * 4 + 1];
-	}
-	eq_table[0] = b1;
 }
 
 void EntireZoneBuilder::calc_photo_carriers() {

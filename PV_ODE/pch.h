@@ -13,10 +13,7 @@
 
 #include <iostream>
 #include "Builder.h"
-#include "PZoneBuilder.h"
-#include "NZoneBuilder.h"
-#include "GradedPZoneBuilder.h"
-#include "PNJunctionBuilder.h"
+#include "EntireZoneBuilder.h"
 #include "SolarCell.h"
 #include "constants.h"
 #include <cassert>
