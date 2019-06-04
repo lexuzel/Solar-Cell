@@ -13,14 +13,14 @@ const double k_b = 1.38064852E-23;			// Стала Больцмана
 const double T = 300.0;						// Температура в Кельвінах
 
 // Координати ключових точок [m]
-const double x_1 = 2.0E-6;					// Кінець варізонної р- області - Початок ООЗ (n-збіднена область)
-const double x_0 = x_1 + 1.0E-6;			// Границя p-n збіднених областей
-const double x_2 = x_0 + 0.2E-6;			// Кінець ООЗ (р-збіднена область) - Початок гомогенної n- області
-const double x_d = x_2 + 3.0E-5;			// Кінець гомогенної n- області
+const double x_1 = 3.5E-6;					// Кінець варізонної р- області - Початок ООЗ (n-збіднена область)
+const double x_0 = x_1 + 1.5E-6;			// Границя p-n збіднених областей
+const double x_2 = x_0 + 1.5E-6;			// Кінець ООЗ (р-збіднена область) - Початок гомогенної n- області
+const double x_d = x_2 + 1.0E-5;			// Кінець гомогенної n- області
 
 // Концентрація домішок [1/m3]
-const double NA = 2.0E17;					// Концентрація акцепторів в р-області
-const double ND = 2.0E17;					// Концентрація донорів в n-області
+const double NA = 2.0E18;					// Концентрація акцепторів в р-області
+const double ND = 2.0E18;					// Концентрація донорів в n-області
 
 // Коефіцієнт поглинання при Eg = hv
 const double alfa0 = 1.0E7;					// Optimization of graded band gap CdHgTe solar cells <A.Bouazzi>
@@ -38,11 +38,11 @@ const double tau_n = 1.0E-9;				// Optimization of graded band gap CdHgTe solar 
 const double tau_p = 1.0E-9;				// Optimization of graded band gap CdHgTe solar cells <A.Bouazzi>
 
 // Швидкість поверхневої рекомбінації [m/s]
-const double S = 1.0E3;						// Optimization of graded band gap CdHgTe solar cells <A.Bouazzi>
+const double S = 1.0E30;						// Optimization of graded band gap CdHgTe solar cells <A.Bouazzi>
 
 // Ширина забороненої зони (ключові точки) [eV]
-const double Eg_0 = 2.76;
-const double Eg_x1 = 2.0;
+const double Eg_0 = 1.5;
+const double Eg_x1 = 1.5;
 const double Eg_x2 = 1.5;
 
 // Ефективні маси електронів і дірок [.]
@@ -62,7 +62,7 @@ const double fermi_level = 0.25;
 
 /* КОНСТАНТИ ЧИСЛОВОГО МЕТОДУ */
 
-const long K_x = 1000;						// Сітка дискретизація для х 
+const long K_x = 5000;						// Сітка дискретизація для х 
 
 // Крок сітки для х
 

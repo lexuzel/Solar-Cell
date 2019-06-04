@@ -2,27 +2,33 @@
 //
 
 #include "pch.h"
+#include "EntireZoneBuilder.h"
 
 int main(){
 	SolarCell solar_cell;
-	auto builder1 = GradedPZoneBuilder();
+	auto builder1 = EntireZoneBuilder();
 	solar_cell.setBuilder(builder1);
 	solar_cell.execute();
-	solar_cell.writeToFile("pzone.txt");
+	solar_cell.writeToFile("entire-zone.txt");
 
-	auto delta_alfa = solar_cell.getDalfa();
+	//auto builder1 = GradedPZoneBuilder();
+	//solar_cell.setBuilder(builder1);
+	//solar_cell.execute();
+	//solar_cell.writeToFile("pzone.txt");
 
-	auto builder2 = PNJunctionBuilder(delta_alfa);
-	solar_cell.setBuilder(builder2);
-	solar_cell.execute();
-	solar_cell.writeToFile("pn_junc.txt");
+	//auto delta_alfa = solar_cell.getDalfa();
 
-	delta_alfa = solar_cell.getDalfa();
+	//auto builder2 = PNJunctionBuilder(delta_alfa);
+	//solar_cell.setBuilder(builder2);
+	//solar_cell.execute();
+	//solar_cell.writeToFile("pn_junc.txt");
 
-	auto builder3 = NZoneBuilder(delta_alfa);
-	solar_cell.setBuilder(builder3);
-	solar_cell.execute();
-	solar_cell.writeToFile("nzone.txt");
+	//delta_alfa = solar_cell.getDalfa();
+
+	//auto builder3 = NZoneBuilder(delta_alfa);
+	//solar_cell.setBuilder(builder3);
+	//solar_cell.execute();
+	//solar_cell.writeToFile("nzone.txt");
 
 	std::cout << "Photo-current = " << solar_cell.ph_current;
 }

@@ -55,7 +55,7 @@ std::vector<double> Builder::construct_coef_matrix(){
 	if (generation_table[0] == 0) {
 	for (double x = x0; x < x0 + width || double_equal(x, x0 + width); x += step_x) {
 		int index = static_cast<int>(round((x - x0) / step_x));
-		assert(index >= 1 && index <= K_x - 1 && "In construct_coef_matrix");
+		assert(index >= 0 && index <= K_x && "In construct_coef_matrix");
 		generation_table[index] = calc_Generation(x);
 	}
 	}
@@ -64,7 +64,7 @@ std::vector<double> Builder::construct_coef_matrix(){
 	std::vector<double> coef_matrix((K_x - 1) * 4);
 	for (long i = 0; i < K_x - 1; i++) {
 		coef_matrix[i * 4 + 0] = 2 * D_diff + mu * step_x * calc_Eq((i + 1) * step_x + x0);
-		coef_matrix[i * 4 + 1] = -4 * D_diff - 2 * step_x * step_x / tau;
+		coef_matrix[i * 4 + 1] = -4 * D_diff - 2 * step_x * step_x * ( 1 / tau - mu * calc_dEdx((i + 1) * step_x + x0));
 		coef_matrix[i * 4 + 2] = 2 * D_diff - mu * step_x * calc_Eq((i + 1) * step_x + x0);
 		coef_matrix[i * 4 + 3] = -generation_table[i + 1] * 2 * step_x*step_x;
 	}
@@ -86,6 +86,10 @@ double Builder::get_Band_gap(double x){
 }
 
 double Builder::calc_Eq(double x){
+	return 0.0;
+}
+
+double Builder::calc_dEdx(double x){
 	return 0.0;
 }
 

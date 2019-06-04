@@ -65,6 +65,10 @@ double PNJunctionBuilder::calc_Eq(double x){
 	}
 }
 
+double PNJunctionBuilder::calc_dEdx(double x){
+	return (calc_Eq(x + step_x) - calc_Eq(x - step_x)) / (2 * step_x);
+}
+
 PNJunctionBuilder::PNJunctionBuilder(std::vector<double> d_alfa) : delta_alfa(d_alfa){
 	x0 = x_1;
 	width = x_2 - x_1;

@@ -31,6 +31,7 @@ protected:
 
 	/* навхякеммъ мюопсфемняр╡ ейб. онкъ б рнвж╡ */
 	virtual double calc_Eq(double x);
+	virtual double calc_dEdx(double x);
 
 	/* навхякеммъ dndx б рнвж╡ */
 	double calc_dndx(double x);
