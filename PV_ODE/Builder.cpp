@@ -1,47 +1,58 @@
 #include "pch.h"
 
-void Builder::integrate_continuity_eq(double b1, double b2){
-	std::vector<double> coef_matrix = construct_coef_matrix();
+std::vector<double> Builder::integrate_continuity_eq(double b1, double b2, bool equilibrium, double t){
+
+	std::vector<double> coef_matrix = construct_coef_matrix(equilibrium, t);
 	coef_matrix[3] -= b1 * coef_matrix[2];
 
 	double alfa3{ 0 }, beta{ 0 };
-	alfa3 = 2 * D_diff - mu * step_x * calc_Eq(step_x);
-	beta = S / D_diff - mu / D_diff * calc_Eq(step_x);
-	coef_matrix[0] += alfa3;
-	coef_matrix[1] -= 2 * step_x * alfa3 * beta;
+	if (!equilibrium) {
+		alfa3 = 2 * D_diff - mu * step_x * get_Eq(step_x);
+		beta = S / D_diff - mu / D_diff * get_Eq(step_x);
+		coef_matrix[0] += alfa3;
+		coef_matrix[1] -= 2 * step_x * alfa3 * beta;
+	}
 
 	for (long i = 0; i < K_x - 2; i++) {
 		coef_matrix[(i + 1) * 4 + 1] -= coef_matrix[(i + 1) * 4 + 2] * coef_matrix[i * 4] / coef_matrix[i * 4 + 1];
 		coef_matrix[(i + 1) * 4 + 3] -= coef_matrix[(i + 1) * 4 + 2] * coef_matrix[i * 4 + 3] / coef_matrix[i * 4 + 1];
 	}
-	n_table[K_x] = b2;
+	std::vector<double> table(K_x + 1);
+	table[K_x] = b2;
 	for (long i = K_x - 2; i >= 0; i--) {
-		n_table[i + 1] = (coef_matrix[i * 4 + 3] - coef_matrix[i * 4] * n_table[i + 2]) / coef_matrix[i * 4 + 1];
+		table[i + 1] = (coef_matrix[i * 4 + 3] - coef_matrix[i * 4] * table[i + 2]) / coef_matrix[i * 4 + 1];
 	}
-	n_table[0] = n_table[2] - n_table[1] * 2 * step_x * beta;
+	if (!equilibrium) table[0] = table[2] - table[1] * 2 * step_x * beta;
+	else table[0] = b1;
+	return table;
 }
 
-void Builder::calc_equilibrium(double b1, double b2){
+std::vector<double> Builder::construct_coef_matrix(bool equilibrium, double t){
 
 	std::vector<double> coef_matrix((K_x - 1) * 4);
-	for (long i = 0; i < K_x - 1; i++) {
-		coef_matrix[i * 4 + 0] = 2 * D_diff + mu * step_x * calc_Eq((i + 1) * step_x + x0);
-		coef_matrix[i * 4 + 1] = -4 * D_diff + 2 * step_x * step_x * mu * calc_dEdx((i + 1) * step_x + x0);
-		coef_matrix[i * 4 + 2] = 2 * D_diff - mu * step_x * calc_Eq((i + 1) * step_x + x0);
-		coef_matrix[i * 4 + 3] = 0;
+	if (equilibrium) {
+		for (long i = 0; i < K_x - 1; i++) {
+			coef_matrix[i * 4 + 0] = 2 * D_diff + mu * step_x * (get_Eq((i + 1) * step_x + x0));
+			coef_matrix[i * 4 + 1] = -4 * D_diff + 2 * step_x * step_x * mu * get_dEdx((i + 1) * step_x + x0);
+			coef_matrix[i * 4 + 2] = 2 * D_diff - mu * step_x * (get_Eq((i + 1) * step_x + x0));
+			coef_matrix[i * 4 + 3] = 0.0;
+		}
 	}
-
-	coef_matrix[3] -= b1 * coef_matrix[2];
-
-	for (long i = 0; i < K_x - 2; i++) {
-		coef_matrix[(i + 1) * 4 + 1] -= coef_matrix[(i + 1) * 4 + 2] * coef_matrix[i * 4] / coef_matrix[i * 4 + 1];
-		coef_matrix[(i + 1) * 4 + 3] -= coef_matrix[(i + 1) * 4 + 2] * coef_matrix[i * 4 + 3] / coef_matrix[i * 4 + 1];
+	else {
+		if (generation_table[0] == 0) {
+			for (double x = x0; x < x0 + width || double_equal(x, x0 + width); x += step_x) {
+				int index = static_cast<int>(round((x - x0) / step_x));
+				generation_table[index] = calc_Generation(x);
+			}
+		}
+		for (long i = 0; i < K_x - 1; i++) {
+			coef_matrix[i * 4 + 0] = 2 * D_diff + mu * step_x * (get_Eq((i + 1) * step_x + x0));
+			coef_matrix[i * 4 + 1] = -4 * D_diff - 2 * step_x * step_x * ( t / tau - mu * get_dEdx((i + 1) * step_x + x0));
+			coef_matrix[i * 4 + 2] = 2 * D_diff - mu * step_x * (get_Eq((i + 1) * step_x + x0));
+			coef_matrix[i * 4 + 3] = -generation_table[i + 1] * 2 * step_x*step_x;
+		}
 	}
-	eq_table[K_x] = b2;
-	for (long i = K_x - 2; i >= 0; i--) {
-		eq_table[i + 1] = (coef_matrix[i * 4 + 3] - coef_matrix[i * 4] * eq_table[i + 2]) / coef_matrix[i * 4 + 1];
-	}
-	eq_table[0] = b1;
+	return coef_matrix;
 }
 
 double Builder::calc_Generation(double x){
@@ -88,33 +99,6 @@ double Builder::calc_Generation(double x){
 	return integral;
 }
 
-double Builder::calc_dndx(double x){
-	int index = static_cast<int>(round((x-x0) / step_x));
-	assert(index >= 1 && index <= K_x - 1 && "In calc_dndx");
-	return (n_table[index + 1] - n_table[index - 1]) / (2 * step_x);
-}
-
-std::vector<double> Builder::construct_coef_matrix(){
-
-	if (generation_table[0] == 0) {
-	for (double x = x0; x < x0 + width || double_equal(x, x0 + width); x += step_x) {
-		int index = static_cast<int>(round((x - x0) / step_x));
-		assert(index >= 0 && index <= K_x && "In construct_coef_matrix");
-		generation_table[index] = calc_Generation(x);
-	}
-	}
-
-
-	std::vector<double> coef_matrix((K_x - 1) * 4);
-	for (long i = 0; i < K_x - 1; i++) {
-		coef_matrix[i * 4 + 0] = 2 * D_diff + mu * step_x * calc_Eq((i + 1) * step_x + x0);
-		coef_matrix[i * 4 + 1] = -4 * D_diff - 2 * step_x * step_x * ( 1 / tau - mu * calc_dEdx((i + 1) * step_x + x0));
-		coef_matrix[i * 4 + 2] = 2 * D_diff - mu * step_x * calc_Eq((i + 1) * step_x + x0);
-		coef_matrix[i * 4 + 3] = -generation_table[i + 1] * 2 * step_x*step_x;
-	}
-	return coef_matrix;
-}
-
 double Builder::get_alfa(double x, double lambda){
 	double d_energy{ (plank_h * speed_of_light / lambda - get_Band_gap(x)) / q_e };
 
@@ -125,13 +109,18 @@ double Builder::get_alfa(double x, double lambda){
 	else return alfa0 * (sqrt(d_energy) + 1);
 }
 
+double Builder::get_derivative(std::vector<double> &table, double x) {
+	int index = static_cast<int>(round((x-x0) / step_x));
+	return (table[index + 1] - table[index - 1]) / (2 * step_x);
+}
+
 double Builder::get_Band_gap(double x){
 	auto energy = get_Energy_level(x);
 	return energy.first - energy.second;
 }
 
-double Builder::calc_dEdx(double x){
-	return (calc_Eq(x + step_x) - calc_Eq(x - step_x)) / (2 * step_x);
+double Builder::get_dEdx(double x){
+	return (get_Eq(x + step_x) - get_Eq(x - step_x)) / (2 * step_x);
 }
 
 bool Builder::double_equal(double a, double b) {
@@ -140,13 +129,5 @@ bool Builder::double_equal(double a, double b) {
 	double diff = fabs(a - b);
 	if (diff < absEpsilon) return true;
 	return diff < (fabs(a) > fabs(b) ? fabs(a) : fabs(b)) * relEpsilon;
-}
-
-void Builder::calc_photoCurrent(){
-	double integral{ 0 };
-	for (int i = 0; i < generation_table.size() - 1; i++) {
-		integral += (generation_table[i] + generation_table[i + 1]) / 2 * step_x;
-	}
-	photo_current = q_e * integral;
 }
 

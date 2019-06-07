@@ -19,7 +19,9 @@
 #include <cassert>
 #include <fstream>
 #include <vector>
+#include <array>
 #include <string>
 #include <algorithm>
+#include <map>
 
 #endif //PCH_H
