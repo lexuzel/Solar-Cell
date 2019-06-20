@@ -1,11 +1,12 @@
 #include "pch.h"
 
-EntireZoneBuilder::EntireZoneBuilder() : 
+EntireZoneBuilder::EntireZoneBuilder(double width_p, double width_n) : 
 					electrons(K_x + 1), 
 					holes(K_x + 1),
 					eq_electrons(K_x + 1),
 					eq_holes(K_x + 1) {
 	x0 = 0.0;
+	w_p = width_p;
 	width = width_p + width_n;
 	step_x = width / K_x;
 
@@ -19,16 +20,16 @@ std::pair<double, double> EntireZoneBuilder::get_Energy_level(double x){
 	double energy_of_conduction_zone, energy_of_valence_zone;
 	auto calc_zone_quadratic = [&x, this](const double &Ex1, const double &Ex2) {
 		double a{ 0 }, b{ 0 }, c{ 0 };
-		double dE_x1 = (Eg_x2 - Eg_0) / width_p;
+		double dE_x1 = (Eg_x2 - Eg_0) / w_p;
 
-		a = Ex2 - Ex1 + dE_x1 * ((width_p - x2) / 2 - width_p + x1);
-		a /= (pow(width_p - x1, 2) - (width_p - x1) * (width_p - x2));
-		if (x < width_p) {
+		a = Ex2 - Ex1 + dE_x1 * ((w_p - x2) / 2 - w_p + x1);
+		a /= (pow(w_p - x1, 2) - (w_p - x1) * (w_p - x2));
+		if (x < w_p) {
 			b = dE_x1 - 2 * a * x1;
 			c = Ex1 - dE_x1 * x1 + a * x1*x1;
 		}
 		else {
-			a = a * (width_p - x1) / (width_p - x2) + (dE_x1 / 2 / (width_p - x2));
+			a = a * (w_p - x1) / (w_p - x2) + (dE_x1 / 2 / (w_p - x2));
 			b = -2 * a * x2;
 			c = Ex2 + a * x2*x2;
 		}
@@ -40,7 +41,7 @@ std::pair<double, double> EntireZoneBuilder::get_Energy_level(double x){
 	};
 
 	if (x < x1 || double_equal(x, x1)) {
-		energy_of_conduction_zone = (Eg_x2 - Eg_0) * q_e / width_p * x + Eg_0 * q_e;
+		energy_of_conduction_zone = (Eg_x2 - Eg_0) * q_e / w_p * x + Eg_0 * q_e;
 		energy_of_valence_zone = 0.0;
 	}
 	else if (x > x2) {
@@ -57,7 +58,7 @@ std::pair<double, double> EntireZoneBuilder::get_Energy_level(double x){
 
 double EntireZoneBuilder::get_Eq(double x){
 	if (D_diff == D_diff_n) {
-		if (x < x1) return (Eg_x2 - Eg_0) / width_p;
+		if (x < x1) return (Eg_x2 - Eg_0) / w_p;
 		if (x > x2) return 0.0;
 		return (get_Energy_level(x + step_x).first / q_e - get_Energy_level(x - step_x).first / q_e) / (2 * step_x);
 	}
@@ -70,15 +71,15 @@ double EntireZoneBuilder::get_Eq(double x){
 void EntireZoneBuilder::calc_photo_carriers(double Eg0) {
 	Eg_0 = Eg0;
 	double width_OOZ = sqrt(2 * eps * eps0 / q_e * (bias) * (NA + ND) / NA / ND) / 10;
-	double p_OOZ = (width_OOZ - eps * eps0 * (Eg_x2 - Eg_0) / (width_p *q_e * ND)) / (NA/ND + 1) / 10;
+	double p_OOZ = (width_OOZ - eps * eps0 * (Eg_x2 - Eg_0) / (w_p *q_e * ND) / 10) / (NA/ND + 1);
 	double n_OOZ = width_OOZ - p_OOZ;
 
-	x1 = width_p - p_OOZ;
-	x2 = width_p + n_OOZ;
+	x1 = w_p - p_OOZ;
+	x2 = w_p + n_OOZ;
 
 	auto calc_current = [this] (std::vector<double> &table) {
 		photo_current += get_photoCurrent();
-		recomb_current += get_recombCurrent(table);
+		//recomb_current += get_recombCurrent(table);
 		minor_current += get_minorCurrent(table);
 	};
 	auto set_ntype_constants = [this] {
@@ -92,7 +93,7 @@ void EntireZoneBuilder::calc_photo_carriers(double Eg0) {
 		tau = tau_p;
 	};
 	auto equilibrium = true;
-	double boudary_electron = 4 * pow(2 * pi * sqrt(me_p * mh_p * m0 * m0) * k_b * T, 3) / pow(plank_h, 6) * exp(-Eg_0 * q_e / (k_b * T));
+	double boudary_electron = 4 * pow(2 * pi * sqrt(me_p * mh_p * m0 * m0) * k_b * T, 3) / pow(plank_h, 6) * exp(-Eg_x2 * q_e / (k_b * T));
 	double boudary_hole = 4 * pow(2 * pi * sqrt(me_n * mh_n * m0 * m0) * k_b * T, 3) / pow(plank_h, 6) * exp(-Eg_x2 * q_e / (k_b * T));
 
 	set_ntype_constants();
@@ -103,13 +104,14 @@ void EntireZoneBuilder::calc_photo_carriers(double Eg0) {
 	
 	set_ptype_constants();
 	holes = integrate_continuity_eq(0.0, 0.0);
-	calc_current(holes);
+//	calc_current(holes);
+	minor_current += get_minorCurrent(holes);
 	eq_holes = integrate_continuity_eq(NA, boudary_hole / ND, equilibrium);
 	equ_current += get_minorCurrent(eq_holes);
 
-	for (auto &a : generation_table) a = 0.0;
-	for (auto &a : alfa_table) a = 0.0;
-	for (auto &a : integral_alfa_table) a = 0.0;
+	for (double &a : alfa_table) a = 0.0;
+	for (double &a : integral_alfa_table) a = 0.0;
+	for (double &a : generation_table) a = 0.0;
 }
 
 void EntireZoneBuilder::write_to_file(const char * filename){
@@ -117,7 +119,20 @@ void EntireZoneBuilder::write_to_file(const char * filename){
 	fout.open(filename);
 	fout.width(15);
 
-	fout << "x \t n(x) \t p(x) \t eq_n(x) \t eq_p(x) \t dndx \t dpdx \t Conduction level \t Valence level \t Band gap \t E_tot \t Generation \n\n";
+	auto get_field = [this](double x) {
+		double electron_field, hole_field;
+		if (x > 0.0 || x < width) {
+			electron_field = (get_Energy_level(x + step_x).first / q_e - get_Energy_level(x - step_x).first / q_e) / (2 * step_x);
+			hole_field = (get_Energy_level(x + step_x).second / q_e - get_Energy_level(x - step_x).second / q_e) / (2 * step_x);
+		}
+		else {
+			electron_field = 0.0;
+			hole_field = 0.0;
+		}
+		return std::make_pair(electron_field, hole_field);
+	};
+
+	fout << "x \t n(x) \t p(x) \t eq_n(x) \t eq_p(x) \t dndx \t dpdx \t Conduction level \t Valence level \t Electron-field \t Hole-field \t alfa \t Generation \n\n";
 	for (double x = 0.0; x < width || double_equal(x, width); x += step_x) {
 		fout.scientific;
 		fout.precision(4);
@@ -128,8 +143,8 @@ void EntireZoneBuilder::write_to_file(const char * filename){
 			      << "\t" << eq_electrons[index] << "\t" << eq_holes[index] << "\t";
 		if (index == 0 || index == K_x) fout << 0.0 << "\t" << 0.0 << "\t";
 		else fout << get_derivative(electrons, x) << "\t" << get_derivative(holes, x) << "\t";
-		fout << energy.first / q_e << "\t" << energy.second / q_e << "\t" << get_Band_gap(x) /q_e << "\t" 
-			 << get_Eq(x) << "\t" << generation_table[index] << "\n";
+		fout << energy.first / q_e << "\t" << energy.second / q_e << "\t" << get_field(x).first << "\t"
+			 << get_field(x).second << "\t" << get_alfa(x, 750e-9) << "\t" << generation_table[index] << "\n";
 	}
 	fout.close();
 }
@@ -151,30 +166,35 @@ double EntireZoneBuilder::get_recombCurrent(std::vector<double> &table){
 }
 
 double EntireZoneBuilder::get_minorCurrent(std::vector<double>& table){
-
-	double current{ 0.0 };
-	double delta{ 100 * step_x };
-	std::vector<double> dndx_table(200);
+	double current = 1.0e10;
+	double delta{ 2*200 * step_x };
+	std::vector<double> dndx_table(2*200);
 	int i = 0;
 	if (D_diff == D_diff_n) {
-		for (double x = x2 - delta; x < x2 + delta; x += step_x) {
+		int index_x2 = static_cast<int>(round(x2 / step_x));
+		for (double x = x2 - delta; x < x2; x += step_x) {
 			dndx_table[i] = get_derivative(table, x);
 			i++;
 		}
 		int index_dndx = std::max_element(dndx_table.begin(), dndx_table.end()) - dndx_table.begin();
-		int index_x1 = static_cast<int>(round(x2 / step_x));
-		int index = index_dndx + index_x1 - 100;
-		current = abs(q_e * (mu * table[index] * get_Eq(index * step_x) + D_diff * get_derivative(table, (index * step_x))));
+		int index = index_dndx + index_x2 - 400;
+		for (int i = -10; i < 11; i++) {
+			double temp = abs(q_e * (mu * table[index + i] * get_Eq((index + i) * step_x) + D_diff * get_derivative(table, ((index + i) * step_x))));
+			if (temp < current) current = temp;
+		}
 	}
 	else {
-		for (double x = x1 - delta; x < x1 + delta; x += step_x) {
+		int index_x1 = static_cast<int>(round(x1 / step_x));
+		for (double x = x1; x < x1 + delta; x += step_x) {
 			dndx_table[i] = get_derivative(table, x);
 			i++;
 		}
 		int index_dndx = std::min_element(dndx_table.begin(), dndx_table.end()) - dndx_table.begin();
-		int index_x1 = static_cast<int>(round(x1 / step_x));
-		int index = index_dndx + index_x1 - 100;
-		current = abs(q_e * (mu * table[index] * get_Eq(index * step_x) + D_diff * get_derivative(table, (index * step_x))));
+		int index = index_dndx + index_x1;
+		for (int i = -10; i < 11; i++) {
+			double temp = abs(q_e * (mu * table[index + i] * get_Eq((index + i) * step_x) + D_diff * get_derivative(table, ((index + i) * step_x))));
+			if (temp < current) current = temp;
+		}
 	}
 	return current;
 }

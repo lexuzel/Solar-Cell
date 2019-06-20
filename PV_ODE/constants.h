@@ -64,9 +64,9 @@ const double fermi_level = 0.25;
 //const double x_2 = x_0 + 1 * width_OOZ / 4;	// Кінець ООЗ (р-збіднена область) - Початок гомогенної n- області
 //const double x_d = x_2 + 2.0E-5;			// Кінець гомогенної n- області
 
-const double width_p = 5.0e-6;
-const double width_n = 2.0e-5;
+//const double width_p = 5.0e-6;
+//const double width_n = 2.0e-5;
 
 /* КОНСТАНТИ ЧИСЛОВОГО МЕТОДУ */
 
-const long K_x = 5000;						// Сітка дискретизація для х 
+const long K_x = 10000;						// Сітка дискретизація для х 

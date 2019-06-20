@@ -7,21 +7,19 @@ void SolarCell::setBuilder(Builder &b) {
 void SolarCell::execute(double Eg_0) {
 	builder->calc_photo_carriers(Eg_0);
 	ph_current = builder->photo_current;
-	rec_current = builder->recomb_current;
 	minor_current = builder->minor_current;
 	equ_current = builder->equ_current;
 
-	summary.push_back({ Eg_0, ph_current/10, rec_current/10, minor_current/10, equ_current/10 });
+	summary.push_back({ Eg_0, ph_current/10, rec_current/10, minor_current/10, equ_current/10000 });
 
 	builder->photo_current = 0.0;
-	builder->recomb_current = 0.0;
 	builder->minor_current = 0.0;
 	builder->equ_current = 0.0;
 }
 
 void SolarCell::execute_all(double begin, double end, double step){
-	for (double Eg_0 = begin; Eg_0 < end; Eg_0 += step) {
-		execute(Eg_0);
+	for (double eg = begin; eg < end + step / 2; eg += step) {
+		execute(eg);
 	}
 }
 

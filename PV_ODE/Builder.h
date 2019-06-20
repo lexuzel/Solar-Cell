@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <mutex>
 
 class Builder {
 protected:
@@ -7,7 +8,7 @@ protected:
 	std::vector<double> generation_table;
 
 	double D_diff, mu, tau;
-	double step_x, x0, x1, x2, width;
+	double step_x, x0, x1, x2, width, w_p;
 	double Eg_0;
 
 	/* Побудувати матрицю коефіцієнтів */
