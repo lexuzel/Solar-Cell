@@ -1,18 +1,7 @@
 #include "pch.h"
 
-EntireZoneBuilder::EntireZoneBuilder(double width_p, double width_n) : 
-					electrons(K_x + 1), 
-					holes(K_x + 1),
-					eq_electrons(K_x + 1),
-					eq_holes(K_x + 1) {
-	x0 = 0.0;
-	w_p = width_p;
-	width = width_p + width_n;
-	step_x = width / K_x;
-
-	generation_table.resize(K_x + 1);
-	alfa_table.resize(2001);
-	integral_alfa_table.resize(2001);
+EntireZoneBuilder::EntireZoneBuilder()
+{
 }
 
 std::pair<double, double> EntireZoneBuilder::get_Energy_level(double x){
@@ -40,17 +29,19 @@ std::pair<double, double> EntireZoneBuilder::get_Energy_level(double x){
 		return (Ex2 - Ex1) / (x2 - x1) * q_e * (x-x1) + Ex1 * q_e;
 	};
 
+	double biasV = k_b * T / q_e * log(NA*ND / intrCarrierConc(PZONE));
+
 	if (x < x1 || double_equal(x, x1)) {
 		energy_of_conduction_zone = (Eg_x2 - Eg_0) * q_e / w_p * x + Eg_0 * q_e;
 		energy_of_valence_zone = 0.0;
 	}
 	else if (x > x2) {
-		energy_of_conduction_zone = (Eg_x2 - bias) * q_e;
-		energy_of_valence_zone = -bias * q_e;
+		energy_of_conduction_zone = (Eg_x2 - biasV) * q_e;
+		energy_of_valence_zone = -biasV * q_e;
 	}
 	else {
-		energy_of_conduction_zone = calc_zone_quadratic(get_Energy_level(x1).first / q_e, Eg_x2 - bias);
-		energy_of_valence_zone = calc_zone_quadratic(0.0, -bias);
+		energy_of_conduction_zone = calc_zone_quadratic(get_Energy_level(x1).first / q_e, Eg_x2 - biasV);
+		energy_of_valence_zone = calc_zone_quadratic(0.0, -biasV);
 	}
 
 	return std::make_pair(energy_of_conduction_zone, energy_of_valence_zone);
@@ -68,20 +59,36 @@ double EntireZoneBuilder::get_Eq(double x){
 	}
 }
 
-void EntireZoneBuilder::calc_photo_carriers(double Eg0) {
-	Eg_0 = Eg0;
-	double width_OOZ = sqrt(2 * eps * eps0 / q_e * (bias) * (NA + ND) / NA / ND) / 10;
-	double p_OOZ = (width_OOZ - eps * eps0 * (Eg_x2 - Eg_0) / (w_p *q_e * ND) / 10) / (NA/ND + 1);
+void EntireZoneBuilder::getDepletionRegionCoord()
+{
+	double biasV = k_b * T / q_e * log(NA*ND / intrCarrierConc(PZONE));
+	double width_OOZ = sqrt(2 * eps * eps0 / q_e * biasV * ( 1/NA + 1/ND ));
+
+	maxEg0 = Eg_x2 + (NA / ND) / (eps * eps0 / (w_p *q_e * ND)) * width_OOZ;
+	//Eg_0 = 0.995 * maxEg0;
+
+	double p_OOZ = (width_OOZ - eps * eps0 * (Eg_x2 - Eg_0) / (w_p *q_e * ND)) / (NA / ND + 1);
+	p_OOZ = p_OOZ > width_OOZ ? width_OOZ : p_OOZ;
 	double n_OOZ = width_OOZ - p_OOZ;
 
-	x1 = w_p - p_OOZ;
-	x2 = w_p + n_OOZ;
+	x1 = (w_p - p_OOZ) > 0.0 ? (w_p - p_OOZ) : 0.0;
+	x2 = (w_p + n_OOZ) < width ? (w_p + n_OOZ) : width;
+}
 
-	auto calc_current = [this] (std::vector<double> &table) {
-		photo_current += get_photoCurrent();
-		//recomb_current += get_recombCurrent(table);
-		minor_current += get_minorCurrent(table);
-	};
+void EntireZoneBuilder::calc_photo_carriers(double width_p, double width_n, double Eg0, double S) {
+
+	this->S = S;
+	x0 = 0.0;
+	w_p = width_p;
+	width = width_p + width_n;
+	step_x = width / K_x;
+
+	generation_table.resize(K_x + 1);
+	integral_alfa_table.resize(K_x + 1);
+
+	Eg_0 = Eg0;
+	getDepletionRegionCoord();
+
 	auto set_ntype_constants = [this] {
 		D_diff = D_diff_n;
 		mu = mu_n;
@@ -92,26 +99,27 @@ void EntireZoneBuilder::calc_photo_carriers(double Eg0) {
 		mu = -mu_p;
 		tau = tau_p;
 	};
-	auto equilibrium = true;
-	double boudary_electron = 4 * pow(2 * pi * sqrt(me_p * mh_p * m0 * m0) * k_b * T, 3) / pow(plank_h, 6) * exp(-Eg_x2 * q_e / (k_b * T));
-	double boudary_hole = 4 * pow(2 * pi * sqrt(me_n * mh_n * m0 * m0) * k_b * T, 3) / pow(plank_h, 6) * exp(-Eg_x2 * q_e / (k_b * T));
+	double boudary_electron = intrCarrierConc(PZONE);
+	double boudary_hole = intrCarrierConc(NZONE);
+	eq_electrons.resize(K_x + 1);
+	eq_holes.resize(K_x + 1);
 
 	set_ntype_constants();
-	electrons = integrate_continuity_eq(0.0, 0.0);
-	calc_current(electrons);
-	eq_electrons = integrate_continuity_eq(boudary_electron / NA, ND, equilibrium);
-	equ_current += get_minorCurrent(eq_electrons);
+	electrons = integrate_continuity_eq(0.0, width, 0.0, 0.0);
+	rec_current = x2 != w_p ? get_recCurrent(electrons) : 0.0;
+	eq_electrons = integrate_continuity_eq(0.0, 0.0, boudary_electron / NA, ND, true);
 	
 	set_ptype_constants();
-	holes = integrate_continuity_eq(0.0, 0.0);
-//	calc_current(holes);
-	minor_current += get_minorCurrent(holes);
-	eq_holes = integrate_continuity_eq(NA, boudary_hole / ND, equilibrium);
-	equ_current += get_minorCurrent(eq_holes);
+	holes = integrate_continuity_eq(0.0, width, 0.0, 0.0);
+	rec_current += x2 != w_p ? get_recCurrent(holes) : 0.0;
+	eq_holes = integrate_continuity_eq(0.0, 0.0, NA, boudary_hole / ND, true);
 
-	for (double &a : alfa_table) a = 0.0;
-	for (double &a : integral_alfa_table) a = 0.0;
-	for (double &a : generation_table) a = 0.0;
+	//photo_current = get_photoCurrent();
+	minor_current = x2 != w_p ? get_minorCurrent() : 0.0;
+	equ_current = get_satCurrent();
+
+	generation_table.clear();
+	integral_alfa_table.clear();
 }
 
 void EntireZoneBuilder::write_to_file(const char * filename){
@@ -133,18 +141,22 @@ void EntireZoneBuilder::write_to_file(const char * filename){
 	};
 
 	fout << "x \t n(x) \t p(x) \t eq_n(x) \t eq_p(x) \t dndx \t dpdx \t Conduction level \t Valence level \t Electron-field \t Hole-field \t alfa \t Generation \n\n";
+
+	int index = 0;
 	for (double x = 0.0; x < width || double_equal(x, width); x += step_x) {
 		fout.scientific;
 		fout.precision(4);
 		fout.width(15);
-		int index = static_cast<int>(round((x - x0) / step_x));
 		auto energy = get_Energy_level(x);
-		fout << x << "\t" << electrons[index] << "\t" << holes[index] 
-			      << "\t" << eq_electrons[index] << "\t" << eq_holes[index] << "\t";
+		fout << x << "\t" << electrons[index] << "\t" << holes[index] << "\t"
+			 << eq_electrons[index] << "\t" << eq_holes[index] << "\t";
+		
 		if (index == 0 || index == K_x) fout << 0.0 << "\t" << 0.0 << "\t";
-		else fout << get_derivative(electrons, x) << "\t" << get_derivative(holes, x) << "\t";
+		else fout << get_derivative(electrons, index, step_x) << "\t" << get_derivative(holes, index, step_x) << "\t";
 		fout << energy.first / q_e << "\t" << energy.second / q_e << "\t" << get_field(x).first << "\t"
 			 << get_field(x).second << "\t" << get_alfa(x, 750e-9) << "\t" << generation_table[index] << "\n";
+
+		index++;
 	}
 	fout.close();
 }
@@ -157,56 +169,111 @@ double EntireZoneBuilder::get_photoCurrent(){
 	return q_e * integral;
 }
 
-double EntireZoneBuilder::get_recombCurrent(std::vector<double> &table){
-	double integral{ 0 };
-	for (int i = 0; i < table.size() - 1; i++) {
-		integral += (table[i] + table[i + 1]) / 2 * step_x;
+double EntireZoneBuilder::getAverageField(double p1, double p2)
+{
+	int index_x1 = static_cast<int>(round(x1 / step_x));
+	int index_x2 = static_cast<int>(round(x2 / step_x));
+
+	static std::vector<double> fieldSumElectron(index_x2 + 1);
+	static std::vector<double> fieldSumHole(K_x - index_x1 + 1);
+
+	if (fieldSumElectron[index_x2] == 0)
+	{
+		double sum = 0.0;
+		int index = index_x2;
+		for (double x = x2; x > 0.0 || double_equal(x, 0.0); x -= step_x)
+		{
+			sum += -get_Eq(x);
+			fieldSumElectron[index] = sum;
+			index--;
+		}
 	}
-	return q_e * integral / tau;
+
+	if (fieldSumHole[0] == 0)
+	{
+		double sum = 0.0;
+		int index = 0;
+		for (double x = x1; x < width || double_equal(x, width); x += step_x)
+		{
+			sum += -get_Eq(x);
+			fieldSumHole[index] = sum;
+			index++;
+		}
+	}
+
+	int index_p1 = static_cast<int>(round(p1 / step_x));
+	int index_p2 = static_cast<int>(round(p2 / step_x));
+	double electronResult = fieldSumElectron[index_p1] / (index_x2 - index_p1);
+	double holeResult = fieldSumHole[index_p2 - index_x1] / (index_p2 - index_x1);
+	return fieldSumHole[0] == 0 ? electronResult : holeResult;
 }
 
-double EntireZoneBuilder::get_minorCurrent(std::vector<double>& table){
-	double current = 1.0e10;
-	double delta{ 2*200 * step_x };
-	std::vector<double> dndx_table(2*200);
-	int i = 0;
-	if (D_diff == D_diff_n) {
-		int index_x2 = static_cast<int>(round(x2 / step_x));
-		for (double x = x2 - delta; x < x2; x += step_x) {
-			dndx_table[i] = get_derivative(table, x);
-			i++;
-		}
-		int index_dndx = std::max_element(dndx_table.begin(), dndx_table.end()) - dndx_table.begin();
-		int index = index_dndx + index_x2 - 400;
-		for (int i = -10; i < 11; i++) {
-			double temp = abs(q_e * (mu * table[index + i] * get_Eq((index + i) * step_x) + D_diff * get_derivative(table, ((index + i) * step_x))));
-			if (temp < current) current = temp;
-		}
-	}
-	else {
-		int index_x1 = static_cast<int>(round(x1 / step_x));
-		for (double x = x1; x < x1 + delta; x += step_x) {
-			dndx_table[i] = get_derivative(table, x);
-			i++;
-		}
-		int index_dndx = std::min_element(dndx_table.begin(), dndx_table.end()) - dndx_table.begin();
-		int index = index_dndx + index_x1;
-		for (int i = -10; i < 11; i++) {
-			double temp = abs(q_e * (mu * table[index + i] * get_Eq((index + i) * step_x) + D_diff * get_derivative(table, ((index + i) * step_x))));
-			if (temp < current) current = temp;
-		}
-	}
-	return current;
+double EntireZoneBuilder::get_minorCurrent()
+{
+	int index_x1 = static_cast<int>(round(x1 / step_x));
+	int index_x2 = static_cast<int>(round(x2 / step_x));
+
+	double er1 = q_e * (electrons[index_x2]) * mu_n * -get_Eq(x2);
+	std::vector<double> table;
+	table.push_back(electrons[index_x2 - 1]);
+	table.push_back(electrons[index_x2]);
+	table.push_back(electrons[index_x2 + 1]);
+	double er2 = q_e * D_diff_n * get_derivative(table, 1, step_x);
+	double electronCurrent = er1 - er2;
+
+	double hr1 = q_e * (holes[index_x1]) * mu_p * -get_Eq(x1);
+	table.clear();
+	if (index_x1 != 0)
+		table.push_back(holes[index_x1 - 1]);
+	table.push_back(holes[index_x1]);
+	table.push_back(holes[index_x1 + 1]);
+	double hr2 = q_e * D_diff_p * get_derivative(table, table.size() - 2, step_x);
+	double holeCurrent = hr1 - hr2;
+
+	return electronCurrent + holeCurrent;
 }
 
-double EntireZoneBuilder::get_quantum_eff(std::vector<double>& table){
-	std::vector<double> table_0tau = integrate_continuity_eq(0.0, 0.0, false, 0.0);
-	double integral{ 0.0 }, integral_0tau{ 0.0 };
-	for (int i = 0; i < table.size() - 1; i++) {
-		integral += (table[i] + table[i + 1]) / 2 * step_x;
-		integral_0tau += (table_0tau[i] + table_0tau[i + 1]) / 2 * step_x;
+double EntireZoneBuilder::intrCarrierConc(Zone zone)
+{
+	double carrierConc;
+	switch (zone)
+	{
+	case PZONE:
+		carrierConc = 4 * pow(2 * pi * sqrt(me_p * mh_p * m0 * m0) * k_b * T, 3) / pow(plank_h, 6) * exp(-Eg_x1 * q_e / (k_b * T));
+		break;
+	case NZONE:
+		carrierConc = 4 * pow(2 * pi * sqrt(me_n * mh_n * m0 * m0) * k_b * T, 3) / pow(plank_h, 6) * exp(-Eg_x2 * q_e / (k_b * T));
+	default:
+		;
 	}
-	return integral / integral_0tau;
+	return carrierConc;
+}
+
+double EntireZoneBuilder::get_satCurrent()
+{
+	// Reference:
+	// https://www.youtube.com/watch?v=kVgFZsnpoQI
+
+	double np0 = intrCarrierConc(PZONE) / NA;
+	double nn0 = intrCarrierConc(NZONE) / ND;
+
+	double Jnsat = q_e * D_diff_n * np0 / sqrt(D_diff_n * tau_n);
+	double Jpsat = q_e * D_diff_p * nn0 / sqrt(D_diff_p * tau_p);
+	return Jnsat + Jpsat;
+}
+
+double EntireZoneBuilder::get_recCurrent(std::vector<double>& table){
+
+	static int index_wp = static_cast<int>(round(w_p / step_x));
+
+	int startIdx = (D_diff == D_diff_n) ? index_wp : 0;
+	int endIdx = (D_diff == D_diff_n) ? K_x : index_wp;
+	double integral{ 0.0 };
+	for (int i = 0; i < K_x - 1; i++) 
+	{
+		integral += (table[i] + table[i + 1]) / 2 * step_x;
+	}
+	return integral * q_e / tau;
 }
 
 

@@ -35,11 +35,11 @@ const double tau_n = 1.0E-9;				// Optimization of graded band gap CdHgTe solar 
 const double tau_p = 1.0E-9;				// Optimization of graded band gap CdHgTe solar cells <A.Bouazzi>
 
 // Швидкість поверхневої рекомбінації [m/s]
-const double S = 1.0E4;						// Optimization of graded band gap CdHgTe solar cells <A.Bouazzi>
+//const double S = 1.0E4;						// Optimization of graded band gap CdHgTe solar cells <A.Bouazzi>
 
 // Ширина забороненої зони (ключові точки) [eV]
 //const double Eg_0 = 1.65;
-//const double Eg_x1 = 2.00;
+const double Eg_x1 = 1.5;
 const double Eg_x2 = 1.5;
 
 // Ефективні маси електронів і дірок [.]
@@ -47,10 +47,6 @@ const double me_p = 0.064;
 const double mh_p = 0.35;
 const double me_n = 0.1;
 const double mh_n = 0.016;
-
-// Енергія міжзонного переходу [eV]
-//const double bias = (Eg_x2 - Eg_x1) / 2 + 0.75 * k_b * T * log(me_p * mh_n / mh_p / me_n);
-const double bias = 1.0;
 
 // Рівень Фермі [eV]
 //const double fermi_level = Eg_x1 / 2 - 0.75 * k_b * T * log(me_p / mh_p);
